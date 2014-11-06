@@ -3,9 +3,7 @@ DROP TABLE IF EXISTS npi_files;
 CREATE TABLE npi_files
 (
   file character varying(255)
-)
-
-DROP TABLE IF EXISTS npi_licenses;
+);
 
 CREATE TABLE npi_licenses
 (
@@ -17,8 +15,6 @@ CREATE TABLE npi_licenses
   taxonomy_switch character varying(12),
   CONSTRAINT npi_licenses_pkey PRIMARY KEY (id)
 );
-
-DROP TABLE IF EXISTS npi_locations;
 
 CREATE TABLE npi_locations
 (
@@ -34,8 +30,6 @@ CREATE TABLE npi_locations
   CONSTRAINT npi_locations_pkey PRIMARY KEY (id)
 );
 
-DROP TABLE IF EXISTS npi_organization_officials;
-
 CREATE TABLE npi_organization_officials
 (
   id uuid NOT NULL,
@@ -50,8 +44,6 @@ CREATE TABLE npi_organization_officials
   CONSTRAINT npi_organization_officials_pkey PRIMARY KEY (id)
 );
 
-DROP TABLE IF EXISTS npi_other_identifiers;
-
 CREATE TABLE npi_other_identifiers
 (
   id uuid NOT NULL,
@@ -63,8 +55,6 @@ CREATE TABLE npi_other_identifiers
   CONSTRAINT npi_other_identifiers_pkey PRIMARY KEY (id)
 );
 
-DROP TABLE IF EXISTS npi_parent_orgs;
-
 CREATE TABLE npi_parent_orgs
 (
   id uuid NOT NULL,
@@ -73,8 +63,6 @@ CREATE TABLE npi_parent_orgs
   CONSTRAINT npi_parent_orgs_pkey PRIMARY KEY (id)
 );
 
-DROP TABLE IF EXISTS npi_taxonomy_groups;
-
 CREATE TABLE npi_taxonomy_groups
 (
   id uuid NOT NULL,
@@ -82,8 +70,6 @@ CREATE TABLE npi_taxonomy_groups
   taxonomy character varying(70),
   CONSTRAINT npi_taxonomy_groups_pkey PRIMARY KEY (id)
 );
-
-DROP TABLE IF EXISTS npis;
 
 CREATE TABLE npis
 (
@@ -111,12 +97,12 @@ CREATE TABLE npis
   other_last_name_type character varying(26),
   enumeration_date date,
   last_update_date date,
-  deactivation_reason character varying(11),
+  deactivation_reason character varying(12),
   deactivation_date date,
   reactivation_date date,
   gender character varying(6),
-  sole_proprietor character varying(11),
-  organization_subpart character varying(11),
+  sole_proprietor character varying(12),
+  organization_subpart character varying(12),
   parent_orgs_id uuid,
   organization_official_id uuid,
   business_location_id uuid,

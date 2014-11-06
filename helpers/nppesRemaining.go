@@ -2,7 +2,6 @@ package helpers
 
 import (
 	"database/sql"
-	"fmt"
 )
 
 func NppesUnprocessed (db *sql.DB, files []string) ([]string, error) {
@@ -18,8 +17,6 @@ func NppesUnprocessed (db *sql.DB, files []string) ([]string, error) {
 			return nil, err
 		}
 	}
-
-	fmt.Println(processed)
 
 	return processed, nil;
 }

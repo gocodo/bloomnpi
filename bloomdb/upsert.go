@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"github.com/lib/pq"
 	"text/template"
+	"fmt"
 )
 
 var fns = template.FuncMap{
@@ -23,7 +24,7 @@ type upsertInfo struct {
 
 func buildQuery(table string, columns []string) (string, error) {
 	buf := new(bytes.Buffer)
-	t, err := template.New("upsert.sql.template").Funcs(fns).ParseFiles("./upsert.sql.template")
+	t, err := template.New("upsert.sql.template").Funcs(fns).ParseFiles("sql/upsert.sql.template")
 	if err != nil {
 		return "", err
 	}
@@ -68,6 +69,7 @@ func Upsert(db *sql.DB, table string, columns []string, rows chan []string) erro
 
 		_, err = stmt.Exec(row...)
 		if err != nil {
+			fmt.Println("table", table, "row", row)
 			return err
 		}
 	}
