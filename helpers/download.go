@@ -1,13 +1,13 @@
 package helpers
 
 import (
-	/*"net/http"
+	"net/http"
 	"io"
-	"os"*/
+	"os"
 )
 
 func Download(file string) error {
-	/*out, err := os.Create("data/" + file + ".zip")
+	out, err := os.Create("data/" + file + ".zip")
 	if err != nil {
 		return err
 	}
@@ -22,7 +22,7 @@ func Download(file string) error {
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
 		return err
-	}*/
+	}
 
 	return nil
 }

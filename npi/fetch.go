@@ -4,6 +4,7 @@ import (
 	"sort"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"github.com/untoldone/bloomapi-npi/bloomdb"
 	"github.com/untoldone/bloomapi-npi/helpers"
 )
@@ -93,5 +94,7 @@ func Fetch() {
 			fmt.Println("Error:", err)
 			return
 		}
+
+		os.Remove("data/" + doneTodo + ".zip")
 	}
 }
