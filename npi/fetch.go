@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"github.com/untoldone/bloomapi-npi/bloomdb"
-	"github.com/untoldone/bloomapi-npi/helpers"
+	"github.com/untoldone/bloomdb"
+	"github.com/untoldone/bloomnpi/helpers"
 )
 
 func Fetch() {

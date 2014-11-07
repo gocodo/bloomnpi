@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 	"fmt"
-	"github.com/untoldone/bloomapi-npi/npi"
+	"github.com/untoldone/bloomnpi/npi"
 	"github.com/spf13/viper"
 )
 

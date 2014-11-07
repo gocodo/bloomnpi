@@ -7,7 +7,7 @@ import (
 	"text/template"
 	"bytes"
 	"database/sql"
-	"github.com/untoldone/bloomapi-npi/bloomdb"
+	"github.com/untoldone/bloomdb"
 	elastigo "github.com/mattbaird/elastigo/lib"
 )
 
