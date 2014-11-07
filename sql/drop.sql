@@ -6,3 +6,4 @@ DROP TABLE IF EXISTS npi_parent_orgs;
 DROP TABLE IF EXISTS npi_taxonomy_groups;
 DROP TABLE IF EXISTS npis;
 DROP TABLE IF EXISTS npi_files;
+DROP TABLE IF EXISTS npi_indexed;

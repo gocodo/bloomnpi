@@ -4,28 +4,64 @@ import (
 	"log"
 	"fmt"
 	"time"
-	"io/ioutil"
+	"text/template"
+	"bytes"
+	"database/sql"
 	"github.com/untoldone/bloomapi-npi/bloomdb"
 	elastigo "github.com/mattbaird/elastigo/lib"
 )
 
-func loadJsonQuery() (string, error) {
-	file, err := ioutil.ReadFile("sql/demo.sql")
+func updateLastSeen(db *sql.DB) (error) {
+	var deactivationDate time.Time
+	err := db.QueryRow("SELECT deactivation_date FROM npis WHERE deactivation_date IS NOT NULL ORDER BY deactivation_date desc LIMIT 1").Scan(&deactivationDate)
+	if err != nil {
+		return err
+	}
+
+	var lastUpdated time.Time
+	err = db.QueryRow("SELECT last_update_date FROM npis WHERE last_update_date IS NOT NULL ORDER BY last_update_date desc LIMIT 1").Scan(&lastUpdated)
+	if err != nil {
+		return err
+	}
+
+	var lastSeen time.Time
+	if lastUpdated.After(deactivationDate) {
+		lastSeen = lastUpdated
+	} else {
+		lastSeen = deactivationDate
+	}
+	_, err = db.Exec("UPDATE npi_indexed SET indexed_through = '" + lastSeen.Format("2006-01-02") + "'")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func loadJsonQuery(db *sql.DB) (string, error) {
+	var lastSeen time.Time
+
+	err := db.QueryRow("SELECT indexed_through FROM npi_indexed").Scan(&lastSeen)
 	if err != nil {
 		return "", err
 	}
 
-	metaSql := string(file[:])
+	buf := new(bytes.Buffer)
 
-	return metaSql, nil
+	t, err := template.New("elasticsearch.sql.template").ParseFiles("sql/elasticsearch.sql.template")
+	if err != nil {
+		return "", err
+	}
+
+	err = t.Execute(buf, struct { QueryAfter string }{lastSeen.Format("2006-01-02")})
+	if err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
 }
 
 func SearchIndex() {
-	sqlQuery, err := loadJsonQuery()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	startTime := time.Now()
 
 	bdb := bloomdb.CreateDB()
@@ -35,6 +71,11 @@ func SearchIndex() {
 		log.Fatal("Failed to get database connection.", err)
 	}
 	defer conn.Close()
+
+	sqlQuery, err := loadJsonQuery(conn)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	rows, err := conn.Query(sqlQuery)
 	if err != nil {
@@ -65,4 +106,9 @@ func SearchIndex() {
 	}
 
 	indexer.Stop()
+
+	err = updateLastSeen(conn)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

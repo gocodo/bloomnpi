@@ -5,6 +5,14 @@ CREATE TABLE npi_files
   file character varying(255)
 );
 
+DROP TABLE IF EXISTS npi_indexed;
+
+CREATE TABLE npi_indexed
+(
+  indexed_through date
+);
+INSERT INTO npi_indexed (indexed_through) VALUES ('2005-01-01');
+
 CREATE TABLE npi_licenses
 (
   id uuid NOT NULL,

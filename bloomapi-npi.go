@@ -11,9 +11,10 @@ func showUsage() {
 	fmt.Println("Usage: bloomapi-npi <command>")
 	fmt.Println("=============================\n")
 	fmt.Println("Avaialable commands:")
-	fmt.Println("bloomapi-npi bootstrap  # setup NPI datasource in BloomAPI")
-	fmt.Println("bloomapi-npi fetch      # fetch latest NPI data and add to BloomAPI")
-	fmt.Println("bloomapi-npi drop       # remove all NPI tables")
+	fmt.Println("bloomapi-npi bootstrap    # setup NPI datasource in BloomAPI")
+	fmt.Println("bloomapi-npi fetch        # fetch latest NPI data and add to BloomAPI")
+	fmt.Println("bloomapi-npi drop         # remove all NPI tables")
+	fmt.Println("bloomapi-npi search-index # index NPI in elasticsearch")
 }
 
 func main() {

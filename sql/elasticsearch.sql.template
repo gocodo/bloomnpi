@@ -1,4 +1,4 @@
-SELECT row_to_json(t)
+SELECT row_to_json(t), npi
 FROM (
   SELECT npis.*, (
     SELECT array_to_json(array_agg(row_to_json(d)))
@@ -57,4 +57,8 @@ FROM (
     ) d
   ) as taxonomy_groups
   FROM npis
+  {{if $.QueryAfter}}
+  WHERE last_update_date >= '{{.QueryAfter}}'
+  OR deactivation_date >= '{{.QueryAfter}}'
+  {{end}}
 ) t
