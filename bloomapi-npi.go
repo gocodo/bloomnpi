@@ -34,6 +34,8 @@ func main() {
 		npi.Fetch()
 	case "drop":
 		npi.Drop()
+	case "search-index":
+		npi.SearchIndex()
 	default:
 		fmt.Println("Invalid command:", arg)
 		showUsage()

@@ -57,6 +57,4 @@ FROM (
     ) d
   ) as taxonomy_groups
   FROM npis
-  WHERE npi = 1174836860
-  limit 1000
 ) t
