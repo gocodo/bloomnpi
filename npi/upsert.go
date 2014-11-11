@@ -132,44 +132,56 @@ func Upsert(file io.ReadCloser) {
 				business_phone := row.Value("Provider Business Mailing Address Telephone Number")
 				business_fax := row.Value("Provider Business Mailing Address Fax Number")
 
-				business_location_id = makeKey(business_address, business_details, business_city, business_country, business_phone, business_fax)
+				business_location_id = makeKey(business_address, business_details, business_city, business_zip, business_country, business_phone, business_fax)
 
-				business_location := make([]string, 9)
+				business_location := make([]string, 10)
 				business_location[0] = business_location_id
 				business_location[1] = business_address
 				business_location[2] = business_details
 				business_location[3] = business_city
 				business_location[4] = business_state
-				business_location[5] = business_zip
-				business_location[6] = business_country
-				business_location[7] = business_phone
-				business_location[8] = business_fax
+				if len(business_zip) == 9 {
+					business_location[5] = business_zip[0:5]
+					business_location[6] = business_zip[5:]
+				} else {
+					business_location[5] = business_zip
+					business_location[6] = ""
+				}
+				business_location[7] = business_country
+				business_location[8] = business_phone
+				business_location[9] = business_fax
 
 				npi_locations <- business_location
 			}
 
-			practice_zip := row.Value("Provider Business Mailing Address Postal Code")
+			practice_zip := row.Value("Provider Business Practice Location Address Postal Code")
 			if practice_zip != "" {
-				practice_address := row.Value("Provider First Line Business Mailing Address")
-				practice_details := row.Value("Provider Second Line Business Mailing Address")
-				practice_city := row.Value("Provider Business Mailing Address City Name")
-				practice_state := row.Value("Provider Business Mailing Address State Name")
-				practice_country := row.Value("Provider Business Mailing Address Country Code (If outside U.S.)")
-				practice_phone := row.Value("Provider Business Mailing Address Telephone Number")
-				practice_fax := row.Value("Provider Business Mailing Address Fax Number")
+				practice_address := row.Value("Provider First Line Business Practice Location Address")
+				practice_details := row.Value("Provider Second Line Business Practice Location Address")
+				practice_city := row.Value("Provider Business Practice Location Address City Name")
+				practice_state := row.Value("Provider Business Practice Location Address State Name")
+				practice_country := row.Value("Provider Business Practice Location Address Country Code (If outside U.S.)")
+				practice_phone := row.Value("Provider Business Practice Location Address Telephone Number")
+				practice_fax := row.Value("Provider Business Practice Location Address Fax Number")
 
-				practice_location_id = makeKey(practice_address, practice_details, practice_city, practice_country, practice_phone, practice_fax)
+				practice_location_id = makeKey(practice_address, practice_details, practice_city, practice_zip, practice_country, practice_phone, practice_fax)
 
-				practice_location := make([]string, 9)
+				practice_location := make([]string, 10)
 				practice_location[0] = practice_location_id
 				practice_location[1] = practice_address
 				practice_location[2] = practice_details
 				practice_location[3] = practice_city
 				practice_location[4] = practice_state
-				practice_location[5] = practice_zip
-				practice_location[6] = practice_country
-				practice_location[7] = practice_phone
-				practice_location[8] = practice_fax
+				if len(practice_zip) == 9 {
+					practice_location[5] = practice_zip[0:5]
+					practice_location[6] = practice_zip[5:]
+				} else {
+					practice_location[5] = practice_zip
+					practice_location[6] = ""
+				}
+				practice_location[7] = practice_country
+				practice_location[8] = practice_phone
+				practice_location[9] = practice_fax
 
 				npi_locations <- practice_location
 			}
@@ -437,6 +449,7 @@ func Upsert(file io.ReadCloser) {
 				"city",
 				"state",
 				"zip",
+				"zip_plus4",
 				"country_code",
 				"phone",
 				"fax",

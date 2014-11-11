@@ -26,7 +26,14 @@ func main() {
 
 	arg := os.Args[1]
 
+	viper.SetConfigName("config")
 	viper.SetConfigType("toml")
+	viper.AddConfigPath("./")
+	err := viper.ReadInConfig()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
 	switch arg {
 	case "bootstrap":

@@ -32,6 +32,7 @@ CREATE TABLE npi_locations
   city character varying(40),
   state character varying(40),
   zip character varying(20),
+  zip_plus4 character varying(4),
   country_code character varying(2),
   phone character varying(20),
   fax character varying(20),

@@ -7,6 +7,7 @@ import (
 	"text/template"
 	"bytes"
 	"database/sql"
+	"encoding/json"
 	"github.com/untoldone/bloomdb"
 	elastigo "github.com/mattbaird/elastigo/lib"
 )
@@ -61,6 +62,38 @@ func loadJsonQuery(db *sql.DB) (string, error) {
 	return buf.String(), nil
 }
 
+func deNull(doc map[string]interface{}) {
+	for k, v := range doc {
+		if v == nil {
+			delete(doc, k)
+		} else {
+			switch v.(type) {
+			case map[string]interface{}:
+				deNull(v.(map[string]interface{}))
+			case []interface{}:
+				for _, elm := range v.([]interface{}) {
+					deNull(elm.(map[string]interface{}))
+				}
+			}
+		}
+	}
+}
+
+func removeNulls(doc string) (string, error) {
+	var dat map[string]interface{}
+	err := json.Unmarshal([]byte(doc), &dat)
+	if err != nil {
+		return "", err
+	}
+	deNull(dat)
+	result, err := json.Marshal(dat)
+	if err != nil {
+		return "", err
+	}
+
+	return string(result), nil
+}
+
 func SearchIndex() {
 	startTime := time.Now()
 
@@ -93,6 +126,11 @@ func SearchIndex() {
 	for rows.Next() {
 		var doc, id string
 		err := rows.Scan(&doc, &id)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		doc, err = removeNulls(doc)
 		if err != nil {
 			log.Fatal(err)
 		}
