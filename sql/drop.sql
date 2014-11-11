@@ -7,3 +7,5 @@ DROP TABLE IF EXISTS npi_taxonomy_groups;
 DROP TABLE IF EXISTS npis;
 DROP TABLE IF EXISTS npi_files;
 DROP TABLE IF EXISTS npi_indexed;
+
+DELETE FROM data_sources WHERE source = 'NPI';

@@ -13,6 +13,9 @@ CREATE TABLE npi_indexed
 );
 INSERT INTO npi_indexed (indexed_through) VALUES ('2005-01-01');
 
+DELETE FROM data_sources WHERE source = 'NPI';
+INSERT INTO data_sources (source, updated, checked, status) VALUES ('NPI', '2005-01-01', '2005-01-01', 'NEVER_RUN');
+
 CREATE TABLE npi_licenses
 (
   id uuid NOT NULL,

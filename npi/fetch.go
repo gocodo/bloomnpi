@@ -5,17 +5,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"time"
 	"github.com/untoldone/bloomdb"
 	"github.com/untoldone/bloomnpi/helpers"
 )
 
 func Fetch() {
-	monthly, weekly, err := helpers.FilesAvailable()
-	if err != nil {
-		fmt.Println("Error: ", err)
-		return
-	}
-
 	bdb := bloomdb.CreateDB()
 	db, err := bdb.SqlConnection()
 	if err != nil {
@@ -23,6 +18,18 @@ func Fetch() {
 		return
 	}
 	defer db.Close()
+
+	_, err = db.Exec("UPDATE data_sources SET status = 'RUNNING' WHERE source = 'NPI'")
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	monthly, weekly, err := helpers.FilesAvailable()
+	if err != nil {
+		fmt.Println("Error: ", err)
+		return
+	}
 
 	monthlyTodos, err := helpers.NppesUnprocessed(db, []string{monthly})
 	if err != nil {
@@ -96,5 +103,20 @@ func Fetch() {
 		}
 
 		os.Remove("data/" + doneTodo + ".zip")
+	}
+
+	now := time.Now().Format(time.RFC3339)
+
+	var query string
+	if len(doneTodos) > 0 {
+		query = "UPDATE data_sources SET status = 'READY', updated = '" + now + "', checked = '" + now + "' WHERE source = 'NPI'"
+	} else {
+		query = "UPDATE data_sources SET status = 'READY', checked = '" + now + "' WHERE source = 'NPI'"
+	}
+
+	_, err = db.Exec(query)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
 	}
 }
