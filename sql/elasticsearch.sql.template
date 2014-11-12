@@ -1,6 +1,6 @@
 SELECT row_to_json(t), npi
 FROM (
-  SELECT npis.npi, npis.created_at, npis.type, npis.replacement_npi, npis.employer_identification_number, 
+  SELECT npis.npi, npis.type, npis.replacement_npi, npis.employer_identification_number, 
        npis.business_name, npis.last_name, npis.first_name, npis.middle_name, npis.name_prefix, 
        npis.name_suffix, npis.credential, npis.other_name, npis.other_name_type, npis.other_last_name, 
        npis.other_first_name, npis.other_middle_name, npis.other_name_prefix, npis.other_name_suffix, 
