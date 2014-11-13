@@ -8,7 +8,7 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
-	"github.com/untoldone/bloomdb"
+	"github.com/gocodo/bloomdb"
 	elastigo "github.com/mattbaird/elastigo/lib"
 )
 
