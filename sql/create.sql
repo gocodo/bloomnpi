@@ -1,11 +1,7 @@
-DROP TABLE IF EXISTS npi_files;
-
 CREATE TABLE npi_files
 (
   file character varying(255)
 );
-
-DROP TABLE IF EXISTS npi_indexed;
 
 CREATE TABLE npi_indexed
 (

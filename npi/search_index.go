@@ -9,7 +9,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"github.com/gocodo/bloomdb"
-	elastigo "github.com/mattbaird/elastigo/lib"
 )
 
 func updateLastSeen(db *sql.DB) (error) {
@@ -116,7 +115,7 @@ func SearchIndex() {
 	}
 	defer rows.Close()
 
-	c := elastigo.NewConn()
+	c := bdb.SearchConnection()
 
 	indexer := c.NewBulkIndexerErrors(10, 60)
 	indexer.Start()

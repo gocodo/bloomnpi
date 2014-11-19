@@ -1,10 +1,8 @@
 package npi
 
 import (
-	"database/sql"
 	"fmt"
 	"github.com/go-contrib/uuid"
-	_ "github.com/lib/pq"
 	"github.com/gocodo/bloomdb"
 	"github.com/gocodo/bloomnpi/csvHeaderReader"
 	"io"
@@ -502,15 +500,18 @@ func Upsert(file io.ReadCloser) {
 		},
 	}
 
+	bdb := bloomdb.CreateDB()
 	for _, dest := range dests {
 		wg.Add(1)
 		go func(dest tableDesc) {
 			defer wg.Done()
-			db, err := sql.Open("postgres", "postgres://localhost/bloomapi-npi?sslmode=disable")
+
+			db, err := bdb.SqlConnection()
 			if err != nil {
 				fmt.Println("Error:", err)
 				return
 			}
+			defer db.Close()
 
 			err = bloomdb.Upsert(db, dest.name, dest.columns, dest.channel)
 			if err != nil {
