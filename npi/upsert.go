@@ -130,24 +130,22 @@ func Upsert(file io.ReadCloser) {
 				business_phone := row.Value("Provider Business Mailing Address Telephone Number")
 				business_fax := row.Value("Provider Business Mailing Address Fax Number")
 
-				business_location_id = makeKey(business_address, business_details, business_city, business_zip, business_country, business_phone, business_fax)
+				business_location_id = makeKey(business_address, business_details, business_city, business_state, business_zip, business_country, business_phone, business_fax)
 
-				business_location := make([]string, 10)
+				business_location := make([]string, 11)
 				business_location[0] = business_location_id
 				business_location[1] = business_address
 				business_location[2] = business_details
 				business_location[3] = business_city
 				business_location[4] = business_state
+				business_location[5] = business_zip
 				if len(business_zip) == 9 {
-					business_location[5] = business_zip[0:5]
-					business_location[6] = business_zip[5:]
-				} else {
-					business_location[5] = business_zip
-					business_location[6] = ""
+					business_location[6] = business_zip[0:5]
+					business_location[7] = business_zip[5:]
 				}
-				business_location[7] = business_country
-				business_location[8] = business_phone
-				business_location[9] = business_fax
+				business_location[8] = business_country
+				business_location[9] = business_phone
+				business_location[10] = business_fax
 
 				npi_locations <- business_location
 			}
@@ -162,24 +160,22 @@ func Upsert(file io.ReadCloser) {
 				practice_phone := row.Value("Provider Business Practice Location Address Telephone Number")
 				practice_fax := row.Value("Provider Business Practice Location Address Fax Number")
 
-				practice_location_id = makeKey(practice_address, practice_details, practice_city, practice_zip, practice_country, practice_phone, practice_fax)
+				practice_location_id = makeKey(practice_address, practice_details, practice_city, practice_state, practice_zip, practice_country, practice_phone, practice_fax)
 
-				practice_location := make([]string, 10)
+				practice_location := make([]string, 11)
 				practice_location[0] = practice_location_id
 				practice_location[1] = practice_address
 				practice_location[2] = practice_details
 				practice_location[3] = practice_city
 				practice_location[4] = practice_state
+				practice_location[5] = practice_zip
 				if len(practice_zip) == 9 {
-					practice_location[5] = practice_zip[0:5]
-					practice_location[6] = practice_zip[5:]
-				} else {
-					practice_location[5] = practice_zip
-					practice_location[6] = ""
+					practice_location[6] = practice_zip[0:5]
+					practice_location[7] = practice_zip[5:]
 				}
-				practice_location[7] = practice_country
-				practice_location[8] = practice_phone
-				practice_location[9] = practice_fax
+				practice_location[8] = practice_country
+				practice_location[9] = practice_phone
+				practice_location[10] = practice_fax
 
 				npi_locations <- practice_location
 			}
@@ -290,14 +286,16 @@ func Upsert(file io.ReadCloser) {
 			for i := 1; i <= 15; i++ {
 				taxonomy := row.Value("Healthcare Provider Taxonomy Group_" + strconv.Itoa(i))
 
-				taxonomy_id := makeKey(taxonomy)
+				if taxonomy != "" {
+					taxonomy_id := makeKey(npi_id, taxonomy)
 
-				taxonomy_group := make([]string, 3)
-				taxonomy_group[0] = taxonomy_id
-				taxonomy_group[1] = npi_id
-				taxonomy_group[2] = taxonomy
+					taxonomy_group := make([]string, 3)
+					taxonomy_group[0] = taxonomy_id
+					taxonomy_group[1] = npi_id
+					taxonomy_group[2] = taxonomy
 
-				npi_taxonomy_groups <- taxonomy_group
+					npi_taxonomy_groups <- taxonomy_group
+				}
 			}
 
 			var entity_type string
@@ -447,6 +445,7 @@ func Upsert(file io.ReadCloser) {
 				"city",
 				"state",
 				"zip",
+				"zip5",
 				"zip_plus4",
 				"country_code",
 				"phone",
@@ -462,7 +461,7 @@ func Upsert(file io.ReadCloser) {
 				"first_name",
 				"middle_name",
 				"title",
-				"telephone_number",
+				"phone",
 				"name_prefix",
 				"name_suffix",
 				"credential",
