@@ -67,5 +67,5 @@ FROM (
     ) d
   ) as taxonomy_groups
   FROM npis
-  WHERE npis.file_id = '{{.FileId}}' AND npis.npi = 1780803247
+  WHERE npis.file_id = '{{.FileId}}'
 ) t;
