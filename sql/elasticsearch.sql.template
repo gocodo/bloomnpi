@@ -4,8 +4,8 @@ FROM (
        npis.business_name, npis.last_name, npis.first_name, npis.middle_name, npis.name_prefix, 
        npis.name_suffix, npis.credential, npis.other_name, npis.other_name_type, npis.other_last_name, 
        npis.other_first_name, npis.other_middle_name, npis.other_name_prefix, npis.other_name_suffix, 
-       npis.other_credential, npis.other_last_name_type, to_char(npis.enumeration_date, 'IYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as enumeration_date, to_char(npis.last_update_date, 'IYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as last_update_date, 
-       npis.deactivation_reason, to_char(npis.deactivation_date, 'IYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as deactivation_date, to_char(npis.reactivation_date, 'IYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as reactivation_date, npis.gender, 
+       npis.other_credential, npis.other_last_name_type, to_char(npis.enumeration_date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as enumeration_date, to_char(npis.last_update_date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as last_update_date, 
+       npis.deactivation_reason, to_char(npis.deactivation_date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as deactivation_date, to_char(npis.reactivation_date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as reactivation_date, npis.gender, 
        npis.sole_proprietor, npis.organization_subpart, (
     SELECT array_to_json(array_agg(row_to_json(d)))
     FROM (
@@ -18,7 +18,7 @@ FROM (
   (
     SELECT row_to_json(bl)
     FROM (
-      SELECT npi_locations.address_line, npi_locations.address_details_line, npi_locations.city, npi_locations.state, npi_locations.zip, npi_locations.zip_plus4, npi_locations.country_code, 
+      SELECT npi_locations.address_line, npi_locations.address_details_line, npi_locations.city, npi_locations.state, npi_locations.zip, npi_locations.zip5, npi_locations.zip_plus4, npi_locations.country_code, 
        npi_locations.phone, npi_locations.fax
       FROM npi_locations
       WHERE npi_locations.id = npis.business_location_id
@@ -27,7 +27,7 @@ FROM (
   (
     SELECT row_to_json(bl)
     FROM (
-      SELECT npi_locations.address_line, npi_locations.address_details_line, npi_locations.city, npi_locations.state, npi_locations.zip, npi_locations.zip_plus4, npi_locations.country_code, 
+      SELECT npi_locations.address_line, npi_locations.address_details_line, npi_locations.city, npi_locations.state, npi_locations.zip, npi_locations.zip5, npi_locations.zip_plus4, npi_locations.country_code, 
        npi_locations.phone, npi_locations.fax
       FROM npi_locations
       WHERE npi_locations.id = npis.practice_location_id
