@@ -51,23 +51,23 @@ func updateIndexed(db *sql.DB) (error) {
 	return nil
 }
 
-func loadJsonQuery(db *sql.DB) (string, error) {
+func loadJsonQueries(db *sql.DB) ([]string, error) {
 	rows, err := db.Query("SELECT id, file FROM npi_files WHERE indexed is null OR indexed = false")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	var (
 		id string
 		file string
-		query string
+		queries []string
 		files []npiFile
 	)
 
 	for rows.Next() {
 		err := rows.Scan(&id, &file)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		files = append(files, npiFile{id, file})
 	}
@@ -79,18 +79,18 @@ func loadJsonQuery(db *sql.DB) (string, error) {
 
 		t, err := template.New("elasticsearch.sql.template").ParseFiles("sql/elasticsearch.sql.template")
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
 		err = t.Execute(buf, struct { FileId string }{file.Id})
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
-		query = query + buf.String()
+		queries = append(queries, buf.String())
 	}
 
-	return query, nil
+	return queries, nil
 }
 
 func deNull(doc map[string]interface{}) {
@@ -136,49 +136,51 @@ func SearchIndex() {
 	}
 	defer conn.Close()
 
-	sqlQuery, err := loadJsonQuery(conn)
+	sqlQueries, err := loadJsonQueries(conn)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if sqlQuery == "" {
+	if len(sqlQueries) == 0 {
 		return
 	}
 
-	rows, err := conn.Query(sqlQuery)
-	if err != nil {
-		log.Fatal("Failed to query for rows.", err)
-	}
-	defer rows.Close()
-
-	c := bdb.SearchConnection()
-
-	indexer := c.NewBulkIndexerErrors(10, 60)
-	indexer.Start()
-
-	count := 0
-
-	for rows.Next() {
-		var doc, id string
-		err := rows.Scan(&doc, &id)
+	for _, query := range sqlQueries {
+		rows, err := conn.Query(query)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("Failed to query for rows.", err)
 		}
+		defer rows.Close()
 
-		doc, err = removeNulls(doc)
-		if err != nil {
-			log.Fatal(err)
-		}
+		c := bdb.SearchConnection()
 
-		count = count + 1
-		if count % 10000 == 0 {
-			fmt.Println(count, "Records Indexed in", time.Now().Sub(startTime))
+		indexer := c.NewBulkIndexerErrors(10, 60)
+		indexer.Start()
+
+		count := 0
+
+		for rows.Next() {
+			var doc, id string
+			err := rows.Scan(&doc, &id)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			doc, err = removeNulls(doc)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			count = count + 1
+			if count % 10000 == 0 {
+				fmt.Println(count, "Records Indexed in", time.Now().Sub(startTime))
+			}
+			
+			indexer.Index("source", "npi", id, "", nil, doc, false)
 		}
-		
-		indexer.Index("source", "npi", id, "", nil, doc, false)
+		indexer.Flush()
+		indexer.Stop()
 	}
-
-	indexer.Stop()
 
 	err = updateIndexed(conn)
 	if err != nil {
