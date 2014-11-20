@@ -52,7 +52,7 @@ func updateIndexed(db *sql.DB) (error) {
 }
 
 func loadJsonQuery(db *sql.DB) (string, error) {
-	rows, err := db.Query("SELECT id, file FROM npi_files WHERE indexed != true")
+	rows, err := db.Query("SELECT id, file FROM npi_files WHERE indexed is null OR indexed = false")
 	if err != nil {
 		return "", err
 	}
