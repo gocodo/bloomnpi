@@ -4,6 +4,8 @@ import (
 	"log"
 	"fmt"
 	"time"
+	"sort"
+	"regexp"
 	"text/template"
 	"bytes"
 	"database/sql"
@@ -11,26 +13,37 @@ import (
 	"github.com/gocodo/bloomdb"
 )
 
-func updateLastSeen(db *sql.DB) (error) {
-	var deactivationDate time.Time
-	err := db.QueryRow("SELECT deactivation_date FROM npis WHERE deactivation_date IS NOT NULL ORDER BY deactivation_date desc LIMIT 1").Scan(&deactivationDate)
-	if err != nil {
-		return err
-	}
+var monthRegex = regexp.MustCompile("NPPES_Data_Dissemination_[a-zA-Z]+")
 
-	var lastUpdated time.Time
-	err = db.QueryRow("SELECT last_update_date FROM npis WHERE last_update_date IS NOT NULL ORDER BY last_update_date desc LIMIT 1").Scan(&lastUpdated)
-	if err != nil {
-		return err
-	}
+type npiFile struct {
+	Id string
+	File string
+}
 
-	var lastSeen time.Time
-	if lastUpdated.After(deactivationDate) {
-		lastSeen = lastUpdated
+type byFile []npiFile
+
+func (a byFile) Len() int {
+	return len(a)
+}
+
+func (a byFile) Less(i, j int) bool {
+	iMonth := monthRegex.MatchString(a[i].File)
+	jMonth := monthRegex.MatchString(a[j].File)
+	if iMonth {
+		return true
+	} else if jMonth {
+		return false
 	} else {
-		lastSeen = deactivationDate
+		return a[i].File < a[j].File
 	}
-	_, err = db.Exec("UPDATE npi_indexed SET indexed_through = '" + lastSeen.Format("2006-01-02") + "'")
+}
+
+func (a byFile) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+
+func updateIndexed(db *sql.DB) (error) {
+	_, err := db.Exec("Update npi_files SET indexed = true")
 	if err != nil {
 		return err
 	}
@@ -39,26 +52,45 @@ func updateLastSeen(db *sql.DB) (error) {
 }
 
 func loadJsonQuery(db *sql.DB) (string, error) {
-	var lastSeen time.Time
-
-	err := db.QueryRow("SELECT indexed_through FROM npi_indexed").Scan(&lastSeen)
+	rows, err := db.Query("SELECT id, file FROM npi_files WHERE indexed != true")
 	if err != nil {
 		return "", err
 	}
 
-	buf := new(bytes.Buffer)
+	var (
+		id string
+		file string
+		query string
+		files []npiFile
+	)
 
-	t, err := template.New("elasticsearch.sql.template").ParseFiles("sql/elasticsearch.sql.template")
-	if err != nil {
-		return "", err
+	for rows.Next() {
+		err := rows.Scan(&id, &file)
+		if err != nil {
+			return "", err
+		}
+		files = append(files, npiFile{id, file})
 	}
 
-	err = t.Execute(buf, struct { QueryAfter string }{lastSeen.Format("2006-01-02")})
-	if err != nil {
-		return "", err
+	sort.Sort(byFile(files))
+
+	for _, file := range files {
+		buf := new(bytes.Buffer)
+
+		t, err := template.New("elasticsearch.sql.template").ParseFiles("sql/elasticsearch.sql.template")
+		if err != nil {
+			return "", err
+		}
+
+		err = t.Execute(buf, struct { FileId string }{file.Id})
+		if err != nil {
+			return "", err
+		}
+
+		query = query + buf.String()
 	}
 
-	return buf.String(), nil
+	return query, nil
 }
 
 func deNull(doc map[string]interface{}) {
@@ -109,7 +141,9 @@ func SearchIndex() {
 		log.Fatal(err)
 	}
 
-	fmt.Println(sqlQuery)
+	if sqlQuery == "" {
+		return
+	}
 
 	rows, err := conn.Query(sqlQuery)
 	if err != nil {
@@ -146,7 +180,7 @@ func SearchIndex() {
 
 	indexer.Stop()
 
-	err = updateLastSeen(conn)
+	err = updateIndexed(conn)
 	if err != nil {
 		log.Fatal(err)
 	}

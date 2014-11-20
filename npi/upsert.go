@@ -82,7 +82,7 @@ var organizationSubpartCodes = map[string]string {
   "N": "no",
 }
 
-func Upsert(file io.ReadCloser, filename string) {
+func Upsert(file io.ReadCloser, file_id string) {
 	var wg sync.WaitGroup
 
 	npis := make(chan []string, 100)
@@ -109,7 +109,6 @@ func Upsert(file io.ReadCloser, filename string) {
 			}
 
 			npi_id := makeKey(row.Value("NPI"), row.Value("Last Update Date"), row.Value("NPI Deactivation Date"))
-			file_id := makeKey(filename)
 
 			// Locations
 			var business_location_id, practice_location_id string
