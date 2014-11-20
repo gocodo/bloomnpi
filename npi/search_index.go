@@ -109,6 +109,8 @@ func SearchIndex() {
 		log.Fatal(err)
 	}
 
+	fmt.Println(sqlQuery)
+
 	rows, err := conn.Query(sqlQuery)
 	if err != nil {
 		log.Fatal("Failed to query for rows.", err)

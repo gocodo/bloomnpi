@@ -71,4 +71,5 @@ FROM (
   WHERE npis.last_update_date >= '{{.QueryAfter}}'
   OR npis.deactivation_date >= '{{.QueryAfter}}'
   {{end}}
+  ORDER BY npis.last_update_date --, npis.deactivation_date
 ) t

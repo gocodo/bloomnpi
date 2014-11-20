@@ -1,13 +1,9 @@
 CREATE TABLE npi_files
 (
-  file character varying(255)
+  id uuid NOT NULL,
+  file character varying(255),
+  indexed boolean
 );
-
-CREATE TABLE npi_indexed
-(
-  indexed_through date
-);
-INSERT INTO npi_indexed (indexed_through) VALUES ('2005-01-01');
 
 DELETE FROM data_sources WHERE source = 'NPI';
 INSERT INTO data_sources (source, updated, checked, status) VALUES ('NPI', '2005-01-01', '2005-01-01', 'NEVER_RUN');
@@ -83,6 +79,7 @@ CREATE TABLE npi_taxonomy_groups
 CREATE TABLE npis
 (
   id uuid NOT NULL,
+  file_id uuid,
   npi bigint NOT NULL,
   created_at timestamp without time zone,
   type character varying(12),

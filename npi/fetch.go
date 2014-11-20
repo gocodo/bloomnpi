@@ -44,9 +44,6 @@ func Fetch() {
 	}
 
 	if len(monthlyTodos) == 1 {
-		Drop()
-		Bootstrap()
-
 		err := helpers.Download(monthlyTodos[0])
 		if err != nil {
 			fmt.Println("Error:", err)
@@ -60,7 +57,9 @@ func Fetch() {
 		}
 		defer reader.Close()
 
-		Upsert(reader)
+		monthlyKey := makeKey(monthlyTodos[0])
+
+		Upsert(reader, monthlyKey)
 
 		file, err := ioutil.ReadFile("sql/index.sql")
 		if err != nil {
@@ -91,12 +90,15 @@ func Fetch() {
 		}
 		defer reader.Close()
 
-		Upsert(reader)
+		weeklyKey := makeKey(weeklyTodo)
+
+		Upsert(reader, weeklyKey)
 	}
 
 	doneTodos := append(monthlyTodos, weeklyTodos...)
 	for _, doneTodo := range doneTodos {
-		_, err := db.Exec("INSERT INTO npi_files (file) VALUES ('" + doneTodo + "')")
+		key := makeKey(doneTodo)
+		_, err := db.Exec("INSERT INTO npi_files (id, file) VALUES ('" + key + "', '" + doneTodo + "')")
 		if err != nil {
 			fmt.Println("Error:", err)
 			return

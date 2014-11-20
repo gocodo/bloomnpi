@@ -2,12 +2,10 @@ package npi
 
 import (
 	"fmt"
-	"github.com/go-contrib/uuid"
 	"github.com/gocodo/bloomdb"
 	"github.com/gocodo/bloomnpi/csvHeaderReader"
 	"io"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -84,12 +82,7 @@ var organizationSubpartCodes = map[string]string {
   "N": "no",
 }
 
-func makeKey(values ...string) string {
-	key := "[" + strings.Join(values, "][") + "]"
-	return uuid.NewV3(uuid.NamespaceOID, key).String()
-}
-
-func Upsert(file io.ReadCloser) {
+func Upsert(file io.ReadCloser, filename string) {
 	var wg sync.WaitGroup
 
 	npis := make(chan []string, 100)
@@ -115,7 +108,8 @@ func Upsert(file io.ReadCloser) {
 				return
 			}
 
-			npi_id := makeKey(row.Value("NPI"))
+			npi_id := makeKey(row.Value("NPI"), row.Value("Last Update Date"), row.Value("NPI Deactivation Date"))
+			file_id := makeKey(filename)
 
 			// Locations
 			var business_location_id, practice_location_id string
@@ -334,7 +328,7 @@ func Upsert(file io.ReadCloser) {
 				subpart = ""
 			}
 
-			npi_values := make([]string, 34)
+			npi_values := make([]string, 35)
 			npi_values[0] = npi_id
 			npi_values[1] = row.Value("NPI")
 			npi_values[2] = created_at
@@ -369,6 +363,7 @@ func Upsert(file io.ReadCloser) {
 			npi_values[31] = parent_orgs_id
 			npi_values[32] = business_location_id
 			npi_values[33] = practice_location_id
+			npi_values[34] = file_id
 
 			npis <- npi_values
 		}
@@ -421,6 +416,7 @@ func Upsert(file io.ReadCloser) {
 				"parent_orgs_id",
 				"business_location_id",
 				"practice_location_id",
+				"file_id",
 			},
 		},
 		tableDesc{

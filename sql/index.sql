@@ -7,3 +7,4 @@ CREATE INDEX ON npis (organization_official_id);
 CREATE INDEX ON npi_other_identifiers (npi_id);
 CREATE INDEX ON npis (parent_orgs_id);
 CREATE INDEX ON npi_taxonomy_groups (npi_id);
+CREATE INDEX ON npis (file_id);
