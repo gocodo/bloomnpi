@@ -18,7 +18,7 @@ FROM (
   (
     SELECT row_to_json(bl)
     FROM (
-      SELECT npi_locations.address_line, npi_locations.address_details_line, npi_locations.city, npi_locations.state, npi_locations.zip, npi_locations.zip5, npi_locations.zip_plus4, npi_locations.country_code, 
+      SELECT npi_locations.address_line, npi_locations.address_details_line, npi_locations.city, npi_locations.state, npi_locations.zip, npi_locations.country_code, 
        npi_locations.phone, npi_locations.fax
       FROM npi_locations
       WHERE npi_locations.id = npis.business_location_id
@@ -27,7 +27,7 @@ FROM (
   (
     SELECT row_to_json(bl)
     FROM (
-      SELECT npi_locations.address_line, npi_locations.address_details_line, npi_locations.city, npi_locations.state, npi_locations.zip, npi_locations.zip5, npi_locations.zip_plus4, npi_locations.country_code, 
+      SELECT npi_locations.address_line, npi_locations.address_details_line, npi_locations.city, npi_locations.state, npi_locations.zip, npi_locations.country_code, 
        npi_locations.phone, npi_locations.fax
       FROM npi_locations
       WHERE npi_locations.id = npis.practice_location_id
