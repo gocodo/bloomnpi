@@ -108,7 +108,7 @@ func Upsert(file io.ReadCloser, file_id string) {
 				return
 			}
 
-			npi_id := makeKey(row.Value("NPI"), row.Value("Last Update Date"), row.Value("NPI Deactivation Date"))
+			npi_id := bloomdb.MakeKey(row.Value("NPI"), row.Value("Last Update Date"), row.Value("NPI Deactivation Date"))
 
 			// Locations
 			var business_location_id, practice_location_id string
@@ -123,7 +123,7 @@ func Upsert(file io.ReadCloser, file_id string) {
 				business_phone := row.Value("Provider Business Mailing Address Telephone Number")
 				business_fax := row.Value("Provider Business Mailing Address Fax Number")
 
-				business_location_id = makeKey(business_address, business_details, business_city, business_state, business_zip, business_country, business_phone, business_fax)
+				business_location_id = bloomdb.MakeKey(business_address, business_details, business_city, business_state, business_zip, business_country, business_phone, business_fax)
 
 				business_location := make([]string, 11)
 				business_location[0] = business_location_id
@@ -153,7 +153,7 @@ func Upsert(file io.ReadCloser, file_id string) {
 				practice_phone := row.Value("Provider Business Practice Location Address Telephone Number")
 				practice_fax := row.Value("Provider Business Practice Location Address Fax Number")
 
-				practice_location_id = makeKey(practice_address, practice_details, practice_city, practice_state, practice_zip, practice_country, practice_phone, practice_fax)
+				practice_location_id = bloomdb.MakeKey(practice_address, practice_details, practice_city, practice_state, practice_zip, practice_country, practice_phone, practice_fax)
 
 				practice_location := make([]string, 11)
 				practice_location[0] = practice_location_id
@@ -186,7 +186,7 @@ func Upsert(file io.ReadCloser, file_id string) {
 				name_suffix := row.Value("Authorized Official Name Suffix Text")
 				credential := row.Value("Authorized Official Credential Text")
 
-				organization_official_id = makeKey(official_last_name, first_name, middle_name, title, telephone_number, name_prefix, name_suffix, credential)
+				organization_official_id = bloomdb.MakeKey(official_last_name, first_name, middle_name, title, telephone_number, name_prefix, name_suffix, credential)
 
 				organization_official := make([]string, 9)
 				organization_official[0] = organization_official_id
@@ -215,7 +215,7 @@ func Upsert(file io.ReadCloser, file_id string) {
 					state := row.Value("Other Provider Identifier State_" + strconv.Itoa(i))
 					issuer := row.Value("Other Provider Identifier Issuer_" + strconv.Itoa(i))
 
-					id := makeKey(npi_id, identifier, idType, state, issuer)
+					id := bloomdb.MakeKey(npi_id, identifier, idType, state, issuer)
 
 					other_identifier := make([]string, 6)
 					other_identifier[0] = id
@@ -247,7 +247,7 @@ func Upsert(file io.ReadCloser, file_id string) {
 
 				if taxonomy_code != "" {
 					npi_license_values := make([]string, 6)
-					npi_license_values[0] = makeKey(npi_id, taxonomy_code, license_number, licenseState, taxonomySwitch)
+					npi_license_values[0] = bloomdb.MakeKey(npi_id, taxonomy_code, license_number, licenseState, taxonomySwitch)
 					npi_license_values[1] = npi_id
 					npi_license_values[2] = taxonomy_code
 					npi_license_values[3] = license_number
@@ -265,7 +265,7 @@ func Upsert(file io.ReadCloser, file_id string) {
 			if parent_business_name != "" {
 				tax_identification_number := row.Value("Parent Organization TIN")
 
-				parent_orgs_id = makeKey(parent_business_name, tax_identification_number)
+				parent_orgs_id = bloomdb.MakeKey(parent_business_name, tax_identification_number)
 
 				parent_org := make([]string, 3)
 				parent_org[0] = parent_orgs_id
@@ -280,7 +280,7 @@ func Upsert(file io.ReadCloser, file_id string) {
 				taxonomy := row.Value("Healthcare Provider Taxonomy Group_" + strconv.Itoa(i))
 
 				if taxonomy != "" {
-					taxonomy_id := makeKey(npi_id, taxonomy)
+					taxonomy_id := bloomdb.MakeKey(npi_id, taxonomy)
 
 					taxonomy_group := make([]string, 3)
 					taxonomy_group[0] = taxonomy_id

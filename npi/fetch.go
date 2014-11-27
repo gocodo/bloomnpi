@@ -57,7 +57,7 @@ func Fetch() {
 		}
 		defer reader.Close()
 
-		monthlyKey := makeKey(monthlyTodos[0])
+		monthlyKey := bloomdb.MakeKey(monthlyTodos[0])
 
 		Upsert(reader, monthlyKey)
 
@@ -90,14 +90,14 @@ func Fetch() {
 		}
 		defer reader.Close()
 
-		weeklyKey := makeKey(weeklyTodo)
+		weeklyKey := bloomdb.MakeKey(weeklyTodo)
 
 		Upsert(reader, weeklyKey)
 	}
 
 	doneTodos := append(monthlyTodos, weeklyTodos...)
 	for _, doneTodo := range doneTodos {
-		key := makeKey(doneTodo)
+		key := bloomdb.MakeKey(doneTodo)
 		_, err := db.Exec("INSERT INTO npi_files (id, file) VALUES ('" + key + "', '" + doneTodo + "')")
 		if err != nil {
 			fmt.Println("Error:", err)
