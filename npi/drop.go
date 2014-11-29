@@ -19,7 +19,6 @@ func Drop() {
 	if err != nil {
 		log.Fatal("Failed to get database connection.", err)
 	}
-	defer conn.Close()
 
 	_, err = conn.Exec(metaSql)
 	if err != nil {

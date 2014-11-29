@@ -17,7 +17,6 @@ func Fetch() {
 		fmt.Println("Error:", err)
 		return
 	}
-	defer db.Close()
 
 	_, err = db.Exec("UPDATE data_sources SET status = 'RUNNING' WHERE source = 'NPI'")
 	if err != nil {

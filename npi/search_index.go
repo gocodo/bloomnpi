@@ -134,7 +134,6 @@ func SearchIndex() {
 	if err != nil {
 		log.Fatal("Failed to get database connection.", err)
 	}
-	defer conn.Close()
 
 	sqlQueries, err := loadJsonQueries(conn)
 	if err != nil {

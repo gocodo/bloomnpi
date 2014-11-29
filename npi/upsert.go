@@ -505,8 +505,7 @@ func Upsert(file io.ReadCloser, file_id string) {
 				fmt.Println("Error:", err)
 				return
 			}
-			defer db.Close()
-
+			
 			err = bloomdb.Upsert(db, dest.name, dest.columns, dest.channel)
 			if err != nil {
 				fmt.Println("Error:", err)
