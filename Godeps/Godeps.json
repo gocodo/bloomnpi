@@ -1,5 +1,5 @@
 {
-	"ImportPath": "github.com/untoldone/bloomapi-npi",
+	"ImportPath": "github.com/gocodo/bloomnpi",
 	"GoVersion": "go1.3.1",
 	"Deps": [
 		{
@@ -39,6 +39,10 @@
 			"Rev": "a07c134f8289edd9ac6ee6f0aa5f3d345f4aaf27"
 		},
 		{
+			"ImportPath": "github.com/gocodo/bloomdb",
+			"Rev": "7fd53843832e4c2890633d712993c0abdcef15d1"
+		},
+		{
 			"ImportPath": "github.com/kr/pretty",
 			"Comment": "go.weekly.2011-12-22-24-gf31442d",
 			"Rev": "f31442d60e51465c69811e2107ae978868dbea5c"
@@ -52,7 +56,7 @@
 			"Rev": "e31e9d09fa0cd168dd1a45ddb1dff76f1f55512a"
 		},
 		{
-			"ImportPath": "github.com/mattbaird/elastigo",
+			"ImportPath": "github.com/mattbaird/elastigo/lib",
 			"Comment": "v1.0-89-gc57bd86",
 			"Rev": "c57bd86150f509f81adf5ce758c5dcbe44144485"
 		},
