@@ -49,11 +49,6 @@ var genders = map[string]string {
 	"F": "female",
 }
 
-var licenseNumberStateCodes = map[string]string {
-  "S": "state",
-  "T": "territory",
-}
-
 var taxonomySwitches = map[string]string {
   "X": "not answered",
   "Y": "yes",
@@ -231,17 +226,15 @@ func Upsert(file io.ReadCloser, file_id string) {
 
 			// Licenses
 			for i := 1; i <= 15; i++ {
-				var ok bool
-				var licenseState string
-				if licenseState, ok = licenseNumberStateCodes[row.Value("Provider License Number State Code_" + strconv.Itoa(i))]; ok != true {
-					licenseState = ""
-				}
-
-				var taxonomySwitch string
+				var (
+					ok bool
+					taxonomySwitch string
+				)
 				if taxonomySwitch, ok = taxonomySwitches[row.Value("Healthcare Provider Primary Taxonomy Switch_" + strconv.Itoa(i))]; ok != true {
 					taxonomySwitch = ""
 				}
 
+				licenseState := row.Value("Provider License Number State Code_" + strconv.Itoa(i))
 				taxonomy_code := row.Value("Healthcare Provider Taxonomy Code_" + strconv.Itoa(i))
 				license_number := row.Value("Provider License Number_" + strconv.Itoa(i))
 
