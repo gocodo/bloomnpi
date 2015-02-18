@@ -3,9 +3,7 @@ package npi
 import (
 	"sort"
 	"fmt"
-	"io/ioutil"
 	"os"
-	"time"
 	"github.com/gocodo/bloomdb"
 	"github.com/gocodo/bloomnpi/helpers"
 )
@@ -13,12 +11,6 @@ import (
 func Fetch() {
 	bdb := bloomdb.CreateDB()
 	db, err := bdb.SqlConnection()
-	if err != nil {
-		fmt.Println("Error:", err)
-		return
-	}
-
-	_, err = db.Exec("UPDATE data_sources SET status = 'RUNNING' WHERE source = 'NPI'")
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
@@ -58,19 +50,7 @@ func Fetch() {
 
 		monthlyKey := bloomdb.MakeKey(monthlyTodos[0])
 
-		Upsert(reader, monthlyKey)
-
-		file, err := ioutil.ReadFile("sql/index.sql")
-		if err != nil {
-			fmt.Println("Failed to read file.", err)
-			return
-		}
-
-		_, err = db.Exec(string(file[:]))
-		if err != nil {
-			fmt.Println("Failed to read file.", err)
-			return
-		}
+		Upsert(reader, monthlyKey, true)
 	}
 
 	sort.Strings(weeklyTodos)
@@ -91,33 +71,17 @@ func Fetch() {
 
 		weeklyKey := bloomdb.MakeKey(weeklyTodo)
 
-		Upsert(reader, weeklyKey)
+		Upsert(reader, weeklyKey, false)
 	}
 
 	doneTodos := append(monthlyTodos, weeklyTodos...)
 	for _, doneTodo := range doneTodos {
-		key := bloomdb.MakeKey(doneTodo)
-		_, err := db.Exec("INSERT INTO npi_files (id, file) VALUES ('" + key + "', '" + doneTodo + "')")
+		err = helpers.NppesMarkProcessed(db, doneTodo)
 		if err != nil {
 			fmt.Println("Error:", err)
 			return
 		}
 
 		os.Remove("data/" + doneTodo + ".zip")
-	}
-
-	now := time.Now().Format(time.RFC3339)
-
-	var query string
-	if len(doneTodos) > 0 {
-		query = "UPDATE data_sources SET status = 'READY', updated = '" + now + "', checked = '" + now + "' WHERE source = 'NPI'"
-	} else {
-		query = "UPDATE data_sources SET status = 'READY', checked = '" + now + "' WHERE source = 'NPI'"
-	}
-
-	_, err = db.Exec(query)
-	if err != nil {
-		fmt.Println("Error:", err)
-		return
 	}
 }

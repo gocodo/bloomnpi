@@ -1,10 +1,17 @@
-DROP TABLE IF EXISTS npi_licenses;
-DROP TABLE IF EXISTS npi_locations;
-DROP TABLE IF EXISTS npi_organization_officials;
-DROP TABLE IF EXISTS npi_other_identifiers;
-DROP TABLE IF EXISTS npi_parent_orgs;
-DROP TABLE IF EXISTS npi_taxonomy_groups;
-DROP TABLE IF EXISTS npis;
-DROP TABLE IF EXISTS npi_files;
-
-DELETE FROM data_sources WHERE source = 'NPI';
+DROP TABLE IF EXISTS usgov_hhs_npis;
+DROP TABLE IF EXISTS usgov_hhs_npis_revisions;
+DROP TABLE IF EXISTS usgov_hhs_npi_licenses;
+DROP TABLE IF EXISTS usgov_hhs_npi_licenses_revisions;
+DROP TABLE IF EXISTS usgov_hhs_npi_locations;
+DROP TABLE IF EXISTS usgov_hhs_npi_locations_revisions;
+DROP TABLE IF EXISTS usgov_hhs_npi_organization_officials;
+DROP TABLE IF EXISTS usgov_hhs_npi_organization_officials_revisions;
+DROP TABLE IF EXISTS usgov_hhs_npi_other_identifiers;
+DROP TABLE IF EXISTS usgov_hhs_npi_other_identifiers_revisions;
+DROP TABLE IF EXISTS usgov_hhs_npi_parent_orgs;
+DROP TABLE IF EXISTS usgov_hhs_npi_parent_orgs_revisions;
+DROP TABLE IF EXISTS usgov_hhs_npi_taxonomy_groups;
+DROP TABLE IF EXISTS usgov_hhs_npi_taxonomy_groups_revisions;
+DELETE FROM source_versions WHERE source_id = '7e8cd826-94e5-3520-a632-2453a3d13b1d';
+DELETE FROM source_tables WHERE source_id = '7e8cd826-94e5-3520-a632-2453a3d13b1d';
+DELETE FROM sources where id = '7e8cd826-94e5-3520-a632-2453a3d13b1d';

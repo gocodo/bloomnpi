@@ -7,13 +7,13 @@ import (
 	"io"
 	"strconv"
 	"sync"
-	"time"
 )
 
 type tableDesc struct {
 	name    string
 	channel chan []string
 	columns []string
+	parentId string
 }
 
 var typeCodes = map[string]string {
@@ -77,7 +77,7 @@ var organizationSubpartCodes = map[string]string {
   "N": "no",
 }
 
-func Upsert(file io.ReadCloser, file_id string) {
+func Upsert(file io.ReadCloser, file_id string, withSync bool) {
 	var wg sync.WaitGroup
 
 	npis := make(chan []string, 100)
@@ -92,7 +92,8 @@ func Upsert(file io.ReadCloser, file_id string) {
 	go func() {
 		defer wg.Done()
 		reader := csvHeaderReader.NewReader(file)
-		created_at := time.Now().Format(time.RFC3339)
+
+		records_count := 0
 
 		for {
 			row, err := reader.Read()
@@ -103,7 +104,13 @@ func Upsert(file io.ReadCloser, file_id string) {
 				return
 			}
 
-			npi_id := bloomdb.MakeKey(row.Value("NPI"), row.Value("Last Update Date"), row.Value("NPI Deactivation Date"))
+			records_count += 1
+			if records_count % 10000 == 0 {
+				fmt.Println("Processed", records_count, "records")
+			}
+
+			npi_id := bloomdb.MakeKey(row.Value("NPI"))
+			npi_revision := bloomdb.MakeKey(row.Value("NPI"), row.Value("Last Update Date"), row.Value("NPI Deactivation Date"))
 
 			// Locations
 			var business_location_id, practice_location_id string
@@ -120,20 +127,17 @@ func Upsert(file io.ReadCloser, file_id string) {
 
 				business_location_id = bloomdb.MakeKey(business_address, business_details, business_city, business_state, business_zip, business_country, business_phone, business_fax)
 
-				business_location := make([]string, 11)
+				business_location := make([]string, 10)
 				business_location[0] = business_location_id
 				business_location[1] = business_address
 				business_location[2] = business_details
 				business_location[3] = business_city
 				business_location[4] = business_state
 				business_location[5] = business_zip
-				if len(business_zip) == 9 {
-					business_location[6] = business_zip[0:5]
-					business_location[7] = business_zip[5:]
-				}
-				business_location[8] = business_country
-				business_location[9] = business_phone
-				business_location[10] = business_fax
+				business_location[6] = business_country
+				business_location[7] = business_phone
+				business_location[8] = business_fax
+				business_location[9] = business_location_id
 
 				npi_locations <- business_location
 			}
@@ -150,20 +154,17 @@ func Upsert(file io.ReadCloser, file_id string) {
 
 				practice_location_id = bloomdb.MakeKey(practice_address, practice_details, practice_city, practice_state, practice_zip, practice_country, practice_phone, practice_fax)
 
-				practice_location := make([]string, 11)
+				practice_location := make([]string, 10)
 				practice_location[0] = practice_location_id
 				practice_location[1] = practice_address
 				practice_location[2] = practice_details
 				practice_location[3] = practice_city
 				practice_location[4] = practice_state
 				practice_location[5] = practice_zip
-				if len(practice_zip) == 9 {
-					practice_location[6] = practice_zip[0:5]
-					practice_location[7] = practice_zip[5:]
-				}
-				practice_location[8] = practice_country
-				practice_location[9] = practice_phone
-				practice_location[10] = practice_fax
+				practice_location[6] = practice_country
+				practice_location[7] = practice_phone
+				practice_location[8] = practice_fax
+				practice_location[9] = practice_location_id
 
 				npi_locations <- practice_location
 			}
@@ -183,7 +184,7 @@ func Upsert(file io.ReadCloser, file_id string) {
 
 				organization_official_id = bloomdb.MakeKey(official_last_name, first_name, middle_name, title, telephone_number, name_prefix, name_suffix, credential)
 
-				organization_official := make([]string, 9)
+				organization_official := make([]string, 10)
 				organization_official[0] = organization_official_id
 				organization_official[1] = official_last_name
 				organization_official[2] = first_name
@@ -193,6 +194,7 @@ func Upsert(file io.ReadCloser, file_id string) {
 				organization_official[6] = name_prefix
 				organization_official[7] = name_suffix
 				organization_official[8] = credential
+				organization_official[9] = organization_official_id
 
 				npi_organization_officials <- organization_official
 			}
@@ -212,13 +214,14 @@ func Upsert(file io.ReadCloser, file_id string) {
 
 					id := bloomdb.MakeKey(npi_id, identifier, idType, state, issuer)
 
-					other_identifier := make([]string, 6)
+					other_identifier := make([]string, 7)
 					other_identifier[0] = id
 					other_identifier[1] = npi_id
 					other_identifier[2] = identifier
 					other_identifier[3] = idType
 					other_identifier[4] = state
 					other_identifier[5] = issuer
+					other_identifier[6] = id
 
 					npi_other_identifiers <- other_identifier
 				}
@@ -239,13 +242,17 @@ func Upsert(file io.ReadCloser, file_id string) {
 				license_number := row.Value("Provider License Number_" + strconv.Itoa(i))
 
 				if taxonomy_code != "" {
-					npi_license_values := make([]string, 6)
-					npi_license_values[0] = bloomdb.MakeKey(npi_id, taxonomy_code, license_number, licenseState, taxonomySwitch)
+					npi_license_values := make([]string, 7)
+
+					id := bloomdb.MakeKey(npi_id, taxonomy_code, license_number, licenseState, taxonomySwitch)
+
+					npi_license_values[0] = id
 					npi_license_values[1] = npi_id
 					npi_license_values[2] = taxonomy_code
 					npi_license_values[3] = license_number
 					npi_license_values[4] = licenseState
 					npi_license_values[5] = taxonomySwitch
+					npi_license_values[6] = id
 
 					npi_licenses <- npi_license_values
 				}
@@ -260,10 +267,11 @@ func Upsert(file io.ReadCloser, file_id string) {
 
 				parent_orgs_id = bloomdb.MakeKey(parent_business_name, tax_identification_number)
 
-				parent_org := make([]string, 3)
+				parent_org := make([]string, 4)
 				parent_org[0] = parent_orgs_id
 				parent_org[1] = parent_business_name
 				parent_org[2] = tax_identification_number
+				parent_org[3] = parent_orgs_id
 
 				npi_parent_orgs <- parent_org
 			}
@@ -275,10 +283,11 @@ func Upsert(file io.ReadCloser, file_id string) {
 				if taxonomy != "" {
 					taxonomy_id := bloomdb.MakeKey(npi_id, taxonomy)
 
-					taxonomy_group := make([]string, 3)
+					taxonomy_group := make([]string, 4)
 					taxonomy_group[0] = taxonomy_id
 					taxonomy_group[1] = npi_id
 					taxonomy_group[2] = taxonomy
+					taxonomy_group[3] = taxonomy_id
 
 					npi_taxonomy_groups <- taxonomy_group
 				}
@@ -320,45 +329,46 @@ func Upsert(file io.ReadCloser, file_id string) {
 				subpart = ""
 			}
 
-			npi_values := make([]string, 35)
+			npi_values := make([]string, 34)
 			npi_values[0] = npi_id
 			npi_values[1] = row.Value("NPI")
-			npi_values[2] = created_at
-			npi_values[3] = entity_type
-			npi_values[4] = row.Value("Replacement NPI")
-			npi_values[5] = row.Value("Employer Identification Number (EIN)")
-			npi_values[6] = row.Value("Provider Organization Name (Legal Business Name)")
-			npi_values[7] = row.Value("Provider Last Name (Legal Name)")
-			npi_values[8] = row.Value("Provider First Name")
-			npi_values[9] = row.Value("Provider Middle Name")
-			npi_values[10] = row.Value("Provider Name Prefix Text")
-			npi_values[11] = row.Value("Provider Name Suffix Text")
-			npi_values[12] = row.Value("Provider Credential Text")
-			npi_values[13] = row.Value("Provider Other Organization Name")
-			npi_values[14] = otherOrgType
-			npi_values[15] = row.Value("Provider Other Last Name")
-			npi_values[16] = row.Value("Provider Other First Name")
-			npi_values[17] = row.Value("Provider Other Middle Name")
-			npi_values[18] = row.Value("Provider Other Name Prefix Text")
-			npi_values[19] = row.Value("Provider Other Name Suffix Text")
-			npi_values[20] = row.Value("Provider Other Credential Text")
-			npi_values[21] = lastNameType
-			npi_values[22] = row.Value("Provider Enumeration Date")
-			npi_values[23] = row.Value("Last Update Date")
-			npi_values[24] = deactReason
-			npi_values[25] = row.Value("NPI Deactivation Date")
-			npi_values[26] = row.Value("NPI Reactivation Date")
-			npi_values[27] = gender
-			npi_values[28] = soleProprietor
-			npi_values[29] = subpart
-			npi_values[30] = organization_official_id
-			npi_values[31] = parent_orgs_id
-			npi_values[32] = business_location_id
-			npi_values[33] = practice_location_id
-			npi_values[34] = file_id
+			npi_values[2] = entity_type
+			npi_values[3] = row.Value("Replacement NPI")
+			npi_values[4] = row.Value("Employer Identification Number (EIN)")
+			npi_values[5] = row.Value("Provider Organization Name (Legal Business Name)")
+			npi_values[6] = row.Value("Provider Last Name (Legal Name)")
+			npi_values[7] = row.Value("Provider First Name")
+			npi_values[8] = row.Value("Provider Middle Name")
+			npi_values[9] = row.Value("Provider Name Prefix Text")
+			npi_values[10] = row.Value("Provider Name Suffix Text")
+			npi_values[11] = row.Value("Provider Credential Text")
+			npi_values[12] = row.Value("Provider Other Organization Name")
+			npi_values[13] = otherOrgType
+			npi_values[14] = row.Value("Provider Other Last Name")
+			npi_values[15] = row.Value("Provider Other First Name")
+			npi_values[16] = row.Value("Provider Other Middle Name")
+			npi_values[17] = row.Value("Provider Other Name Prefix Text")
+			npi_values[18] = row.Value("Provider Other Name Suffix Text")
+			npi_values[19] = row.Value("Provider Other Credential Text")
+			npi_values[20] = lastNameType
+			npi_values[21] = row.Value("Provider Enumeration Date")
+			npi_values[22] = row.Value("Last Update Date")
+			npi_values[23] = deactReason
+			npi_values[24] = row.Value("NPI Deactivation Date")
+			npi_values[25] = row.Value("NPI Reactivation Date")
+			npi_values[26] = gender
+			npi_values[27] = soleProprietor
+			npi_values[28] = subpart
+			npi_values[29] = organization_official_id
+			npi_values[30] = parent_orgs_id
+			npi_values[31] = business_location_id
+			npi_values[32] = practice_location_id
+			npi_values[33] = npi_revision
 
 			npis <- npi_values
 		}
+
+		fmt.Println("Processed", records_count, "records")
 
 		close(npis)
 		close(npi_licenses)
@@ -371,12 +381,11 @@ func Upsert(file io.ReadCloser, file_id string) {
 
 	dests := []tableDesc{
 		tableDesc{
-			name:    "npis",
+			name:    "usgov_hhs_npis",
 			channel: npis,
 			columns: []string{
 				"id",
 				"npi",
-				"created_at",
 				"type",
 				"replacement_npi",
 				"employer_identification_number",
@@ -408,12 +417,13 @@ func Upsert(file io.ReadCloser, file_id string) {
 				"parent_orgs_id",
 				"business_location_id",
 				"practice_location_id",
-				"file_id",
+				"revision",
 			},
 		},
 		tableDesc{
-			name:    "npi_licenses",
+			name:    "usgov_hhs_npi_licenses",
 			channel: npi_licenses,
+			parentId: "npi_id",
 			columns: []string{
 				"id",
 				"npi_id",
@@ -421,10 +431,11 @@ func Upsert(file io.ReadCloser, file_id string) {
 				"license_number",
 				"license_number_state",
 				"taxonomy_switch",
+				"revision",
 			},
 		},
 		tableDesc{
-			name:    "npi_locations",
+			name:    "usgov_hhs_npi_locations",
 			channel: npi_locations,
 			columns: []string{
 				"id",
@@ -433,15 +444,14 @@ func Upsert(file io.ReadCloser, file_id string) {
 				"city",
 				"state",
 				"zip",
-				"zip5",
-				"zip_plus4",
 				"country_code",
 				"phone",
 				"fax",
+				"revision",
 			},
 		},
 		tableDesc{
-			name:    "npi_organization_officials",
+			name:    "usgov_hhs_npi_organization_officials",
 			channel: npi_organization_officials,
 			columns: []string{
 				"id",
@@ -453,11 +463,13 @@ func Upsert(file io.ReadCloser, file_id string) {
 				"name_prefix",
 				"name_suffix",
 				"credential",
+				"revision",
 			},
 		},
 		tableDesc{
-			name:    "npi_other_identifiers",
+			name:    "usgov_hhs_npi_other_identifiers",
 			channel: npi_other_identifiers,
+			parentId: "npi_id",
 			columns: []string{
 				"id",
 				"npi_id",
@@ -465,24 +477,28 @@ func Upsert(file io.ReadCloser, file_id string) {
 				"type",
 				"state",
 				"issuer",
+				"revision",
 			},
 		},
 		tableDesc{
-			name:    "npi_parent_orgs",
+			name:    "usgov_hhs_npi_parent_orgs",
 			channel: npi_parent_orgs,
 			columns: []string{
 				"id",
 				"business_name",
 				"tax_identification_number",
+				"revision",
 			},
 		},
 		tableDesc{
-			name:    "npi_taxonomy_groups",
+			name:    "usgov_hhs_npi_taxonomy_groups",
 			channel: npi_taxonomy_groups,
+			parentId: "npi_id",
 			columns: []string{
 				"id",
 				"npi_id",
 				"taxonomy",
+				"revision",
 			},
 		},
 	}
@@ -499,10 +515,18 @@ func Upsert(file io.ReadCloser, file_id string) {
 				return
 			}
 			
-			err = bloomdb.Upsert(db, dest.name, dest.columns, dest.channel)
-			if err != nil {
-				fmt.Println("Error:", err)
-				return
+			if withSync {
+				err = bloomdb.Sync(db, dest.name, dest.columns, dest.channel)
+				if err != nil {
+					fmt.Println("Error:", err)
+					return
+				}
+			} else {
+				err = bloomdb.Upsert(db, dest.name, dest.columns, dest.channel, dest.parentId)
+				if err != nil {
+					fmt.Println("Error:", err)
+					return
+				}
 			}
 		}(dest)
 	}

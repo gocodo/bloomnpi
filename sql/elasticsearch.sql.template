@@ -1,71 +1,383 @@
-SELECT row_to_json(t), npi
-FROM (
-  SELECT npis.npi, npis.type, npis.replacement_npi, npis.employer_identification_number, 
-       npis.business_name, npis.last_name, npis.first_name, npis.middle_name, npis.name_prefix, 
-       npis.name_suffix, npis.credential, npis.other_name, npis.other_name_type, npis.other_last_name, 
-       npis.other_first_name, npis.other_middle_name, npis.other_name_prefix, npis.other_name_suffix, 
-       npis.other_credential, npis.other_last_name_type, to_char(npis.enumeration_date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as enumeration_date, to_char(npis.last_update_date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as last_update_date, 
-       npis.deactivation_reason, to_char(npis.deactivation_date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as deactivation_date, to_char(npis.reactivation_date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as reactivation_date, npis.gender, 
-       npis.sole_proprietor, npis.organization_subpart, (
-    SELECT array_to_json(array_agg(row_to_json(d)))
-    FROM (
-      SELECT npi_licenses.healthcare_taxonomy_code, npi_licenses.license_number, npi_licenses.license_number_state, 
-       npi_licenses.taxonomy_switch
-      FROM npi_licenses
-      WHERE npi_licenses.npi_id = npis.id
-    ) d
-  ) as provider_details,
-  (
-    SELECT row_to_json(bl)
-    FROM (
-      SELECT npi_locations.address_line, npi_locations.address_details_line, npi_locations.city, npi_locations.state, npi_locations.zip, npi_locations.country_code, 
-       npi_locations.phone, npi_locations.fax
-      FROM npi_locations
-      WHERE npi_locations.id = npis.business_location_id
-    ) bl
-  ) as business_address,
-  (
-    SELECT row_to_json(bl)
-    FROM (
-      SELECT npi_locations.address_line, npi_locations.address_details_line, npi_locations.city, npi_locations.state, npi_locations.zip, npi_locations.country_code, 
-       npi_locations.phone, npi_locations.fax
-      FROM npi_locations
-      WHERE npi_locations.id = npis.practice_location_id
-    ) bl
-  ) as practice_address,
-    (
-    SELECT row_to_json(bl)
-    FROM (
-      SELECT npi_organization_officials.last_name, npi_organization_officials.first_name, npi_organization_officials.middle_name, npi_organization_officials.title, npi_organization_officials.phone, 
-       npi_organization_officials.name_prefix, npi_organization_officials.name_suffix, npi_organization_officials.credential
-      FROM npi_organization_officials
-      WHERE npi_organization_officials.id = npis.organization_official_id
-    ) bl
-  ) as organization_official,
-  (
-    SELECT array_to_json(array_agg(row_to_json(d)))
-    FROM (
-      SELECT npi_other_identifiers.identifier, npi_other_identifiers.type, npi_other_identifiers.state, npi_other_identifiers.issuer
-      FROM npi_other_identifiers
-      WHERE npi_other_identifiers.npi_id = npis.id
-    ) d
-  ) as other_identifiers,
-  (
-    SELECT row_to_json(bl)
-    FROM (
-      SELECT npi_parent_orgs.business_name, npi_parent_orgs.tax_identification_number
-      FROM npi_parent_orgs
-      WHERE npi_parent_orgs.id = npis.parent_orgs_id
-    ) bl
-  ) as parent_org,
-  (
-    SELECT array_to_json(array_agg(row_to_json(d)))
-    FROM (
-      SELECT npi_taxonomy_groups.taxonomy
-      FROM npi_taxonomy_groups
-      WHERE npi_taxonomy_groups.npi_id = npis.id
-    ) d
-  ) as taxonomy_groups
-  FROM npis
-  WHERE npis.file_id = '{{.FileId}}'
-) t;
+SELECT row_to_json(root), root.npi FROM
+(SELECT
+
+
+npi
+,
+
+type
+,
+
+replacement_npi
+,
+
+employer_identification_number
+,
+
+business_name
+,
+
+last_name
+,
+
+first_name
+,
+
+middle_name
+,
+
+name_prefix
+,
+
+name_suffix
+,
+
+credential
+,
+
+other_name
+,
+
+other_name_type
+,
+
+other_last_name
+,
+
+other_first_name
+,
+
+other_middle_name
+,
+
+other_name_prefix
+,
+
+other_name_suffix
+,
+
+other_credential
+,
+
+other_last_name_type
+,
+
+to_char(enumeration_date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as enumeration_date
+,
+
+to_char(last_update_date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as last_update_date
+,
+
+deactivation_reason
+,
+
+to_char(deactivation_date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as deactivation_date
+,
+
+to_char(reactivation_date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as reactivation_date
+,
+
+gender
+,
+
+sole_proprietor
+,
+
+organization_subpart
+
+
+,
+(
+  SELECT
+
+    array_to_json(array_agg(row_to_json(provider_details_table))) AS provider_details
+
+
+  FROM
+  (SELECT
+
+
+  healthcare_taxonomy_code
+
+  ,
+
+  license_number
+
+  ,
+
+  license_number_state
+
+  ,
+
+  taxonomy_switch
+
+
+  FROM
+  usgov_hhs_npi_licenses two
+
+    WHERE usgov_hhs_npis.id = two.npi_id
+
+  ) AS provider_details_table)
+
+,
+(
+  SELECT
+
+
+    row_to_json(business_address_table) AS business_address
+
+  FROM
+  (SELECT
+
+
+  address_line
+
+  ,
+
+  address_details_line
+
+  ,
+
+  city
+
+  ,
+
+  state
+
+  ,
+
+  zip
+
+  ,
+
+  country_code
+
+  ,
+
+  phone
+
+  ,
+
+  fax
+
+
+  FROM
+  usgov_hhs_npi_locations two
+
+    WHERE usgov_hhs_npis.business_location_id = two.id
+
+  ) AS business_address_table)
+
+,
+(
+  SELECT
+
+
+    row_to_json(practice_address_table) AS practice_address
+
+  FROM
+  (SELECT
+
+
+  address_line
+
+  ,
+
+  address_details_line
+
+  ,
+
+  city
+
+  ,
+
+  state
+
+  ,
+
+  zip
+
+  ,
+
+  country_code
+
+  ,
+
+  phone
+
+  ,
+
+  fax
+
+
+  FROM
+  usgov_hhs_npi_locations two
+
+    WHERE usgov_hhs_npis.practice_location_id = two.id
+
+  ) AS practice_address_table)
+
+,
+(
+  SELECT
+
+
+    row_to_json(organization_official_table) AS organization_official
+
+  FROM
+  (SELECT
+
+
+  last_name
+
+  ,
+
+  first_name
+
+  ,
+
+  middle_name
+
+  ,
+
+  title
+
+  ,
+
+  phone
+
+  ,
+
+  name_prefix
+
+  ,
+
+  name_suffix
+
+  ,
+
+  credential
+
+
+  FROM
+  usgov_hhs_npi_organization_officials two
+
+    WHERE usgov_hhs_npis.organization_official_id = two.id
+
+  ) AS organization_official_table)
+
+,
+(
+  SELECT
+
+    array_to_json(array_agg(row_to_json(other_identifiers_table))) AS other_identifiers
+
+
+  FROM
+  (SELECT
+
+
+  identifier
+
+  ,
+
+  type
+
+  ,
+
+  state
+
+  ,
+
+  issuer
+
+
+  FROM
+  usgov_hhs_npi_other_identifiers two
+
+    WHERE usgov_hhs_npis.id = two.npi_id
+
+  ) AS other_identifiers_table)
+
+,
+(
+  SELECT
+
+
+    row_to_json(parent_org_table) AS parent_org
+
+  FROM
+  (SELECT
+
+
+  business_name
+
+  ,
+
+  tax_identification_number
+
+
+  FROM
+  usgov_hhs_npi_parent_orgs two
+
+    WHERE usgov_hhs_npis.parent_orgs_id = two.id
+
+  ) AS parent_org_table)
+
+,
+(
+  SELECT
+
+    array_to_json(array_agg(row_to_json(taxonomy_groups_table))) AS taxonomy_groups
+
+
+  FROM
+  (SELECT
+
+
+  taxonomy
+
+
+  FROM
+  usgov_hhs_npi_taxonomy_groups two
+
+    WHERE usgov_hhs_npis.id = two.npi_id
+
+  ) AS taxonomy_groups_table)
+
+FROM usgov_hhs_npis
+
+WHERE
+usgov_hhs_npis.bloom_created_at > '{{.CreatedAt}}'
+
+
+  OR
+  EXISTS(SELECT 1 FROM usgov_hhs_npi_licenses two WHERE two.bloom_created_at > '{{.CreatedAt}}' AND two.npi_id = usgov_hhs_npis.id) OR
+  EXISTS(SELECT 1 FROM usgov_hhs_npi_licenses_revisions WHERE usgov_hhs_npi_licenses_revisions.bloom_action = 'DELETE' AND usgov_hhs_npi_licenses_revisions.bloom_updated_at > '{{.CreatedAt}}' AND usgov_hhs_npi_licenses_revisions.npi_id = usgov_hhs_npis.id)
+
+  OR
+  EXISTS(SELECT 1 FROM usgov_hhs_npi_locations two WHERE two.bloom_created_at > '{{.CreatedAt}}' AND two.id = usgov_hhs_npis.business_location_id) OR
+  EXISTS(SELECT 1 FROM usgov_hhs_npi_locations_revisions WHERE usgov_hhs_npi_locations_revisions.bloom_action = 'DELETE' AND usgov_hhs_npi_locations_revisions.bloom_updated_at > '{{.CreatedAt}}' AND usgov_hhs_npi_locations_revisions.id = usgov_hhs_npis.business_location_id)
+
+  OR
+  EXISTS(SELECT 1 FROM usgov_hhs_npi_locations two WHERE two.bloom_created_at > '{{.CreatedAt}}' AND two.id = usgov_hhs_npis.practice_location_id) OR
+  EXISTS(SELECT 1 FROM usgov_hhs_npi_locations_revisions WHERE usgov_hhs_npi_locations_revisions.bloom_action = 'DELETE' AND usgov_hhs_npi_locations_revisions.bloom_updated_at > '{{.CreatedAt}}' AND usgov_hhs_npi_locations_revisions.id = usgov_hhs_npis.practice_location_id)
+
+  OR
+  EXISTS(SELECT 1 FROM usgov_hhs_npi_organization_officials two WHERE two.bloom_created_at > '{{.CreatedAt}}' AND two.id = usgov_hhs_npis.organization_official_id) OR
+  EXISTS(SELECT 1 FROM usgov_hhs_npi_organization_officials_revisions WHERE usgov_hhs_npi_organization_officials_revisions.bloom_action = 'DELETE' AND usgov_hhs_npi_organization_officials_revisions.bloom_updated_at > '{{.CreatedAt}}' AND usgov_hhs_npi_organization_officials_revisions.id = usgov_hhs_npis.organization_official_id)
+
+  OR
+  EXISTS(SELECT 1 FROM usgov_hhs_npi_other_identifiers two WHERE two.bloom_created_at > '{{.CreatedAt}}' AND two.npi_id = usgov_hhs_npis.id) OR
+  EXISTS(SELECT 1 FROM usgov_hhs_npi_other_identifiers_revisions WHERE usgov_hhs_npi_other_identifiers_revisions.bloom_action = 'DELETE' AND usgov_hhs_npi_other_identifiers_revisions.bloom_updated_at > '{{.CreatedAt}}' AND usgov_hhs_npi_other_identifiers_revisions.npi_id = usgov_hhs_npis.id)
+
+  OR
+  EXISTS(SELECT 1 FROM usgov_hhs_npi_parent_orgs two WHERE two.bloom_created_at > '{{.CreatedAt}}' AND two.id = usgov_hhs_npis.parent_orgs_id) OR
+  EXISTS(SELECT 1 FROM usgov_hhs_npi_parent_orgs_revisions WHERE usgov_hhs_npi_parent_orgs_revisions.bloom_action = 'DELETE' AND usgov_hhs_npi_parent_orgs_revisions.bloom_updated_at > '{{.CreatedAt}}' AND usgov_hhs_npi_parent_orgs_revisions.id = usgov_hhs_npis.parent_orgs_id)
+
+  OR
+  EXISTS(SELECT 1 FROM usgov_hhs_npi_taxonomy_groups two WHERE two.bloom_created_at > '{{.CreatedAt}}' AND two.npi_id = usgov_hhs_npis.id) OR
+  EXISTS(SELECT 1 FROM usgov_hhs_npi_taxonomy_groups_revisions WHERE usgov_hhs_npi_taxonomy_groups_revisions.bloom_action = 'DELETE' AND usgov_hhs_npi_taxonomy_groups_revisions.bloom_updated_at > '{{.CreatedAt}}' AND usgov_hhs_npi_taxonomy_groups_revisions.npi_id = usgov_hhs_npis.id)
+
+) AS root
+WHERE npi IS NOT NULL

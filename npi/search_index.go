@@ -4,8 +4,6 @@ import (
 	"log"
 	"fmt"
 	"time"
-	"sort"
-	"regexp"
 	"text/template"
 	"bytes"
 	"database/sql"
@@ -13,84 +11,27 @@ import (
 	"github.com/gocodo/bloomdb"
 )
 
-var monthRegex = regexp.MustCompile("NPPES_Data_Dissemination_[a-zA-Z]+")
+func buildIndexQuery(createdAt time.Time) (string, error) {
+	buf := new(bytes.Buffer)
 
-type npiFile struct {
-	Id string
-	File string
-}
-
-type byFile []npiFile
-
-func (a byFile) Len() int {
-	return len(a)
-}
-
-func (a byFile) Less(i, j int) bool {
-	iMonth := monthRegex.MatchString(a[i].File)
-	jMonth := monthRegex.MatchString(a[j].File)
-	if iMonth {
-		return true
-	} else if jMonth {
-		return false
-	} else {
-		return a[i].File < a[j].File
-	}
-}
-
-func (a byFile) Swap(i, j int) {
-	a[i], a[j] = a[j], a[i]
-}
-
-func updateIndexed(db *sql.DB) (error) {
-	_, err := db.Exec("Update npi_files SET indexed = true")
+	t, err := template.New("elasticsearch.sql.template").ParseFiles("sql/elasticsearch.sql.template")
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	tCreatedAt := createdAt.Format(time.RFC3339)
+
+	err = t.Execute(buf, struct { CreatedAt string }{tCreatedAt})
+	if err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
 }
 
-func loadJsonQueries(db *sql.DB) ([]string, error) {
-	rows, err := db.Query("SELECT id, file FROM npi_files WHERE indexed is null OR indexed = false")
-	if err != nil {
-		return nil, err
-	}
-
-	var (
-		id string
-		file string
-		queries []string
-		files []npiFile
-	)
-
-	for rows.Next() {
-		err := rows.Scan(&id, &file)
-		if err != nil {
-			return nil, err
-		}
-		files = append(files, npiFile{id, file})
-	}
-
-	sort.Sort(byFile(files))
-
-	for _, file := range files {
-		buf := new(bytes.Buffer)
-
-		t, err := template.New("elasticsearch.sql.template").ParseFiles("sql/elasticsearch.sql.template")
-		if err != nil {
-			return nil, err
-		}
-
-		err = t.Execute(buf, struct { FileId string }{file.Id})
-		if err != nil {
-			return nil, err
-		}
-
-		queries = append(queries, buf.String())
-	}
-
-	return queries, nil
+func buildDeleteQuery(createdAt time.Time) (string, error) {
+	tCreatedAt := createdAt.Format(time.RFC3339)
+	return "SELECT usgov_hhs_npis_revisions.id FROM usgov_hhs_npis_revisions WHERE bloom_action = 'DELETE' AND bloom_updated_at > '" + tCreatedAt + "';", nil
 }
 
 func deNull(doc map[string]interface{}) {
@@ -126,62 +67,109 @@ func removeNulls(doc string) (string, error) {
 }
 
 func SearchIndex() {
-	startTime := time.Now()
+	startTime := time.Now().UTC()
 
 	bdb := bloomdb.CreateDB()
-
 	conn, err := bdb.SqlConnection()
 	if err != nil {
-		log.Fatal("Failed to get database connection.", err)
+		log.Fatal(err)
+	}
+	defer conn.Close()
+
+	var lastUpdated time.Time
+	err = conn.QueryRow("SELECT last_updated FROM search_types WHERE name = 'usgov.hhs.npi'").Scan(&lastUpdated)
+	if err == sql.ErrNoRows {
+		lastUpdated = time.Unix(0, 0)
+		_, err := conn.Exec("INSERT INTO search_types (name, last_updated, last_checked) VALUES ('usgov.hhs.npi', $1, $1)", lastUpdated)
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else if err != nil {
+		log.Fatal(err)
 	}
 
-	sqlQueries, err := loadJsonQueries(conn)
+	c := bdb.SearchConnection()
+
+	indexer := c.NewBulkIndexerErrors(10, 60)
+	indexer.BulkMaxBuffer = 10485760
+	indexer.Start()
+
+	indexCount := 0
+	deleteCount := 0
+
+	query, err := buildDeleteQuery(lastUpdated)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if len(sqlQueries) == 0 {
-		return
+	rows, err := conn.Query(query)
+	if err != nil {
+		log.Fatal("Failed to query for rows.", err)
 	}
+	defer rows.Close()
 
-	for _, query := range sqlQueries {
-		rows, err := conn.Query(query)
+	for rows.Next() {
+		var id string
+		err := rows.Scan(&id)
 		if err != nil {
-			log.Fatal("Failed to query for rows.", err)
+			log.Fatal(err)
 		}
-		defer rows.Close()
 
-		c := bdb.SearchConnection()
-
-		indexer := c.NewBulkIndexerErrors(10, 60)
-		indexer.Start()
-
-		count := 0
-
-		for rows.Next() {
-			var doc, id string
-			err := rows.Scan(&doc, &id)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			doc, err = removeNulls(doc)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			count = count + 1
-			if count % 10000 == 0 {
-				fmt.Println(count, "Records Indexed in", time.Now().Sub(startTime))
-			}
-			
-			indexer.Index("source", "npi", id, "", nil, doc, false)
+		deleteCount += 1
+		if deleteCount % 10000 == 0 {
+			fmt.Println(deleteCount, "Records Deleted in", time.Now().Sub(startTime))
 		}
-		indexer.Flush()
-		indexer.Stop()
+
+		indexer.Delete("source", "usgov.hhs.npi", id, false)
 	}
 
-	err = updateIndexed(conn)
+	indexer.Flush()
+	fmt.Println(deleteCount, "Records Deleted in", time.Now().Sub(startTime))
+
+	query, err = buildIndexQuery(lastUpdated)
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	insertRows, err := conn.Query(query)
+	if err != nil {
+		fmt.Println("Error with query:", query)
+		log.Fatal(err)
+	}
+	defer insertRows.Close()
+
+	for insertRows.Next() {
+		var doc, id string
+		err := insertRows.Scan(&doc, &id)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		doc, err = removeNulls(doc)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		indexCount += 1
+		if indexCount % 10000 == 0 {
+			fmt.Println(indexCount, "Records Indexed in", time.Now().Sub(startTime))
+		}
+
+		indexer.Index("source", "usgov.hhs.npi", id, "", nil, doc, false)
+	}
+
+	indexer.Flush()
+	// There seems to be a bug in elastigo ... unsure why this sometimes fails
+	// Should be fixed at some point ...
+	//indexer.Stop()
+	fmt.Println(indexCount, "Records Indexed in", time.Now().Sub(startTime))
+
+	if indexCount > 0 || deleteCount > 0 {
+		_, err = conn.Exec("UPDATE search_types SET last_updated = $1, last_checked = $1 WHERE name = 'usgov.hhs.npi'", startTime)
+	} else {
+		_, err = conn.Exec("UPDATE search_types SET last_checked = $1 WHERE name = 'usgov.hhs.npi'", startTime)
+	}
+
 	if err != nil {
 		log.Fatal(err)
 	}
