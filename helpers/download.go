@@ -13,7 +13,7 @@ func Download(file string) error {
 	}
 	defer out.Close()
 
-	resp, err := http.Get("http://nppes.viva-it.com/" + file + ".zip")
+	resp, err := http.Get("http://download.cms.gov/nppes/" + file + ".zip")
 	if err != nil {
 		return err
 	}
