@@ -1,17 +1,17 @@
 package helpers
 
 import (
-	"net/http"
 	"io/ioutil"
+	"net/http"
 	"regexp"
 )
 
 var ignore = regexp.MustCompile(`<\!\-\-(.|\n)*?\-\-\>`)
-var weeklyRegex = regexp.MustCompile(`http\:\/\/.*(NPPES_Data_Dissemination_\d+_\d+_Weekly).zip`)
-var monthlyRegex = regexp.MustCompile(`http\:\/\/.*(NPPES_Data_Dissemination_[a-zA-Z]+_\d+).zip`)
+var weeklyRegex = regexp.MustCompile(`href=.*\/(NPPES_Data_Dissemination_\d+_\d+_Weekly).zip`)
+var monthlyRegex = regexp.MustCompile(`href=.*\/(NPPES_Data_Dissemination_[a-zA-Z]+_\d+).zip`)
 
-func FilesAvailable () (string, []string, error) {
-	resp, err := http.Get("http://nppes.viva-it.com/NPI_Files.html")
+func FilesAvailable() (string, []string, error) {
+	resp, err := http.Get("http://download.cms.gov/nppes/NPI_Files.html")
 	if err != nil {
 		return "", nil, err
 	}
@@ -27,7 +27,7 @@ func FilesAvailable () (string, []string, error) {
 	bodyS = ignore.ReplaceAllString(bodyS, "")
 	monthlyMatches := monthlyRegex.FindStringSubmatch(bodyS)
 	weeklyMatches := weeklyRegex.FindAllStringSubmatch(bodyS, -1)
-	
+
 	var monthly string
 	if len(monthlyMatches) > 0 {
 		monthly = monthlyMatches[1]
