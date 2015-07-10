@@ -7,8 +7,8 @@ import (
 )
 
 var ignore = regexp.MustCompile(`<\!\-\-(.|\n)*?\-\-\>`)
-var weeklyRegex = regexp.MustCompile(`href=.*\/(NPPES_Data_Dissemination_\d+_\d+_Weekly).zip`)
-var monthlyRegex = regexp.MustCompile(`href=.*\/(NPPES_Data_Dissemination_[a-zA-Z]+_\d+).zip`)
+var weeklyRegex = regexp.MustCompile(`(NPPES_Data_Dissemination_\d+_\d+_Weekly).zip`)
+var monthlyRegex = regexp.MustCompile(`(NPPES_Data_Dissemination_[a-zA-Z]+_\d+).zip`)
 
 func FilesAvailable() (string, []string, error) {
 	resp, err := http.Get("http://download.cms.gov/nppes/NPI_Files.html")
