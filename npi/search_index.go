@@ -120,7 +120,7 @@ func SearchIndex() {
 			fmt.Println(deleteCount, "Records Deleted in", time.Now().Sub(startTime))
 		}
 
-		indexer.Delete("source", "usgov.hhs.npi", id, false)
+		indexer.Delete("source", "usgov.hhs.npi", id)
 	}
 
 	indexer.Flush()
@@ -130,7 +130,7 @@ func SearchIndex() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	insertRows, err := conn.Query(query)
 	if err != nil {
 		fmt.Println("Error with query:", query)
@@ -155,7 +155,7 @@ func SearchIndex() {
 			fmt.Println(indexCount, "Records Indexed in", time.Now().Sub(startTime))
 		}
 
-		indexer.Index("source", "usgov.hhs.npi", id, "", nil, doc, false)
+		indexer.Index("source", "usgov.hhs.npi", id, "", doc, nil, false)
 	}
 
 	indexer.Flush()
