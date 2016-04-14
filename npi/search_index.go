@@ -155,7 +155,7 @@ func SearchIndex() {
 			fmt.Println(indexCount, "Records Indexed in", time.Now().Sub(startTime))
 		}
 
-		indexer.Index("source", "usgov.hhs.npi", id, "", doc, nil, false)
+		indexer.Index("source", "usgov.hhs.npi", id, "", "", nil, doc)
 	}
 
 	indexer.Flush()
