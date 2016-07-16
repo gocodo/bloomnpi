@@ -174,6 +174,12 @@
 			"revision": "77144270da4a139bc4554f0488514f4212312ac3"
 		},
 		{
+			"checksumSHA1": "VFwjNp0gmYf9BuRv/nr7WWk6X0Q=",
+			"path": "github.com/untoldone/bloomdb",
+			"revision": "a31c948b16b820ef203335225cab0f03c308d4ad",
+			"revisionTime": "2016-07-16T19:30:43Z"
+		},
+		{
 			"checksumSHA1": "5FkYRFXX3oCRM5tvekDbjsFae5w=",
 			"comment": "v0.0.2",
 			"path": "github.com/xordataexchange/crypt/backend",
