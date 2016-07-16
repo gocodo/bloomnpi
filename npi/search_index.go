@@ -120,7 +120,7 @@ func SearchIndex() {
 			fmt.Println(deleteCount, "Records Deleted in", time.Now().Sub(startTime))
 		}
 
-		indexer.Delete("source", "usgov.hhs.npi", id)
+		indexer.Delete("source", "usgov.hhs.npi", id, false)
 	}
 
 	indexer.Flush()
@@ -155,7 +155,7 @@ func SearchIndex() {
 			fmt.Println(indexCount, "Records Indexed in", time.Now().Sub(startTime))
 		}
 
-		indexer.Index("source", "usgov.hhs.npi", id, "", "", nil, doc)
+		indexer.Index("source", "usgov.hhs.npi", id, "", nil, doc, false)
 	}
 
 	indexer.Flush()
